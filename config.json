@@ -14,14 +14,14 @@
     {
       "name": "京东自营 Pura X View 12+256 (示例, 请替换skuId)",
       "type": "jd",
-      "skuId": "100000000000",
+      "skuId": "10232789210184",
       "area": "1_72_4137_0",
       "open_url": ""
     },
     {
       "name": "华为商城 Pura X View 12+256 (示例, 请替换url)",
       "type": "url",
-      "url": "https://www.vmall.com/product/comdetail/index.html?prdId=替换&sbomCode=替换",
+      "url": "https://item.vmall.com/product/comdetail/index.html?prdId=10086683896486",
       "in_stock_markers": [
         "立即购买",
         "加入购物车",
