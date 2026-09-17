@@ -130,10 +130,54 @@ def check_url(target, session):
         return "错误", f"页面请求失败: {e}", url
 
 
+def check_vmall(target, session):
+    """华为商城检查: 无头浏览器加载商品页, 监听页面自身的 querySkuInventoryV2 库存响应。
+    (模拟请求会被 WAF 以 50017 拒绝, 只能让真实页面自己去取)"""
+    import subprocess
+    prd_url = str(target.get("prd_url", "")).strip()
+    if not prd_url.startswith("http") or "替换" in prd_url:
+        return "未配置", "prd_url 未填写, 跳过", ""
+    node = target.get("node_path", "node")
+    # 配置里的 node 路径不存在时(如云端 Linux)回退到 PATH 里的 node
+    if node != "node" and not os.path.isfile(node):
+        node = "node"
+    helper = str(BASE_DIR / target.get("helper_script", "vmall_api.js"))
+    env = dict(os.environ)
+    nm = str(target.get("node_modules_path", "")).strip()
+    if nm:
+        sep = ";" if os.name == "nt" else ":"
+        env["NODE_PATH"] = nm if not env.get("NODE_PATH") else env["NODE_PATH"] + sep + nm
+    try:
+        r = subprocess.run(
+            [node, helper, prd_url, "15000"],
+            capture_output=True, text=True, timeout=120,
+            encoding="utf-8", errors="replace", env=env, cwd=str(BASE_DIR),
+        )
+        lines = [l for l in (r.stdout or "").strip().splitlines() if l.strip()]
+        data = json.loads(lines[-1]) if lines else {}
+        if "error" in data:
+            return "错误", f"页面加载失败: {data['error']}", prd_url
+        inv = data.get("inventory", {})
+        if not inv:
+            return "错误", "未捕获到库存响应(页面结构可能变化)", prd_url
+        watch = [c for c in target.get("sku_codes", []) if c] or list(inv.keys())
+        avail = {c: inv[c] for c in watch if int(inv.get(c, 0)) > 0}
+        status = "有货" if avail else "无货"
+        detail = f"监控 {len(watch)} 个SKU, 有货: " + (", ".join(f"{c}×{q}" for c, q in avail.items()) or "无")
+        open_url = target.get("open_url") or prd_url
+        return status, detail, open_url
+    except subprocess.TimeoutExpired:
+        return "错误", "浏览器加载超时", prd_url
+    except Exception as e:
+        return "错误", f"vmall 检查失败: {e}", prd_url
+
+
 def check_target(target, session):
     t = target.get("type", "url")
     if t == "jd":
         return check_jd(target, session)
+    if t == "vmall":
+        return check_vmall(target, session)
     return check_url(target, session)
 
 

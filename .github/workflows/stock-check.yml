@@ -22,8 +22,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 安装依赖
-        run: pip install requests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装依赖(playwright-core + Chromium, 用于华为商城库存接口)
+        run: |
+          pip install requests
+          npm install playwright-core
+          node node_modules/playwright-core/cli.js install --with-deps chromium
 
       - name: 检查库存(有货时自动推送微信)
         env:
