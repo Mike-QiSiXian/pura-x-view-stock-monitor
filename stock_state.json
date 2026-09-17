@@ -1,12 +1,12 @@
 {
   "京东自营 Pura X View 12+256 (示例, 请替换skuId)": {
     "status": "错误",
-    "detail": "京东接口请求失败: HTTPSConnectionPool(host='c0.3.cn', port=443): Max retries exceeded with url: /stock?skuId=100000000000&area=1_72_4137_0&extraParam=%7B%22originid%22%3A%221%22%7D&fqsp=0 (Caused by NameResolutionError(\"HTTPSConnection(host='c0.3.cn', port=443): Failed to resolve 'c0.3.cn' ([Errno -2] Name or service not known)\"))",
-    "time": "2026-09-17T17:06:45"
+    "detail": "京东接口请求失败: HTTPSConnectionPool(host='c0.3.cn', port=443): Max retries exceeded with url: /stock?skuId=10232789210184&area=1_72_4137_0&extraParam=%7B%22originid%22%3A%221%22%7D&fqsp=0 (Caused by NameResolutionError(\"HTTPSConnection(host='c0.3.cn', port=443): Failed to resolve 'c0.3.cn' ([Errno -2] Name or service not known)\"))",
+    "time": "2026-09-17T17:27:29"
   },
   "华为商城 Pura X View 12+256 (示例, 请替换url)": {
-    "status": "未配置",
-    "detail": "url 未填写, 跳过",
-    "time": "2026-09-17T17:06:47"
+    "status": "未知",
+    "detail": "页面无法判定(可能是JS动态渲染, 建议换用京东skuId目标或确认标记词)",
+    "time": "2026-09-17T17:27:35"
   }
 }
