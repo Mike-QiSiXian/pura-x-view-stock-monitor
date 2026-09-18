@@ -75,12 +75,33 @@ OUT_STOCK_STATES = {34, 36}      # 无货 / 采购中
 STATE_NAME = {33: "现货", 34: "无货", 36: "采购中", 39: "有货", 40: "可配货"}
 
 
+LOG_FILE = None  # 由 main() 从配置注入; 后台无控制台运行时日志全部依赖它
+
+
+def _pid_alive(pid):
+    """Windows 下判断进程是否存活(不依赖 psutil)"""
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+    import ctypes
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    h = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+    if h:
+        ctypes.windll.kernel32.CloseHandle(h)
+        return True
+    return False
+
+
 def log(msg, log_file=None):
     line = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
     print(line, flush=True)
-    if log_file:
+    target = log_file or LOG_FILE
+    if target:
         try:
-            p = BASE_DIR / log_file
+            p = BASE_DIR / target
             # 单文件超过 5MB 时轮转, 避免长时间运行把磁盘写满
             if p.exists() and p.stat().st_size > 5 * 1024 * 1024:
                 p.replace(p.with_suffix(".old.log"))
@@ -315,13 +336,16 @@ def run_once(cfg, state):
 
 
 def main():
+    global LOG_FILE
     ap = argparse.ArgumentParser(description="Pura X View 补货监控")
     ap.add_argument("--config", default=str(BASE_DIR / "config.json"))
     ap.add_argument("--once", action="store_true", help="只检查一轮后退出")
     ap.add_argument("--test-alert", action="store_true", help="测试报警链路")
+    ap.add_argument("--force", action="store_true", help="忽略已有实例检查, 强制启动")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
+    LOG_FILE = cfg.get("log_file", "stock_monitor.log")
     if args.test_alert:
         test_alert(cfg)
         return
@@ -341,6 +365,16 @@ def main():
 
     # 写 PID 文件, 供 stop_monitor.cmd 精确停止本进程
     pid_file = BASE_DIR / "monitor.pid"
+    if pid_file.exists() and not args.force:
+        try:
+            old = int(pid_file.read_text(encoding="utf-8").strip())
+        except (ValueError, OSError):
+            old = None
+        if old and _pid_alive(old):
+            log(f"已有监控实例在运行(PID {old}), 本次启动取消。")
+            log("如需换用新版本, 先运行 stop_monitor.cmd, 再重新启动; 强制启动加 --force")
+            return
+        log(f"清理失效的 PID 文件(PID {old} 已不存在)")
     try:
         pid_file.write_text(str(os.getpid()), encoding="utf-8")
     except OSError:

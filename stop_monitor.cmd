@@ -1,18 +1,10 @@
 @echo off
-rem Stops the background monitor started by run_monitor_hidden.cmd
+rem Stops ALL running Pura X View monitor instances (background or foreground).
+rem Matches by command line containing monitor.py, so other Python processes are not touched.
+setlocal
 cd /d "%~dp0"
-if not exist monitor.pid (
-  echo [INFO] monitor.pid not found - background monitor is probably not running.
-  pause
-  exit /b 0
-)
-set /p PID=<monitor.pid
-echo Stopping monitor process PID %PID% ...
-taskkill /f /pid %PID% >nul 2>&1
-if errorlevel 1 (
-  echo [WARN] Failed to kill PID %PID% - it may have already exited.
-) else (
-  echo [OK] Monitor stopped.
-)
-del /q monitor.pid >nul 2>&1
+echo Stopping Pura X View monitor instances ...
+powershell -NoProfile -Command "$p = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*monitor.py*' -and $_.Name -like 'python*' }; if ($p) { $p | ForEach-Object { Write-Host ('  killing PID ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force } } else { Write-Host '  no running monitor found' }"
+if exist monitor.pid del /q monitor.pid >nul 2>&1
+echo Done. PID file cleared.
 pause
