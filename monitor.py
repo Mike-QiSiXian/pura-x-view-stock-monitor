@@ -55,6 +55,11 @@ try:
 except ImportError:
     sys.exit("缺少 requests 库, 请先执行: pip install requests")
 
+# Windows 下隐藏子进程控制台窗口:
+# pythonw 无控制台, 其控制台子进程(node.exe 等)默认会新建可见 cmd 窗口,
+# 必须加 CREATE_NO_WINDOW 才不会每轮检查闪黑框。
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+
 try:
     import winsound  # Windows 专用
 except ImportError:
@@ -177,6 +182,7 @@ def check_vmall(target, session):
             [node, helper, prd_url, str(int(target.get("wait_ms", 12000)))],
             capture_output=True, text=True, timeout=120,
             encoding="utf-8", errors="replace", env=env, cwd=str(BASE_DIR),
+            creationflags=_NO_WINDOW,
         )
         lines = [l for l in (r.stdout or "").strip().splitlines() if l.strip()]
         data = json.loads(lines[-1]) if lines else {}
@@ -222,7 +228,8 @@ def alert(target_name, detail, open_url, notify_cfg):
             ps = ("Add-Type -AssemblyName System.Windows.Forms; "
                   f"[System.Windows.Forms.MessageBox]::Show("
                   f"'{target_name} 补货啦! {detail}', '补货提醒', 0, 48)")
-            subprocess.Popen(["powershell", "-NoProfile", "-Command", ps])
+            subprocess.Popen(["powershell", "-NoProfile", "-Command", ps],
+                             creationflags=_NO_WINDOW)
         except Exception as e:
             log(f"弹窗失败: {e}")
     if notify_cfg.get("open_browser", True) and open_url:
