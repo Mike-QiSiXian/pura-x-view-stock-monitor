@@ -1,6 +1,6 @@
 {
-  "interval_seconds": 60,
-  "jitter_ratio": 0.25,
+  "interval_seconds": 45,
+  "jitter_ratio": 0.2,
   "log_file": "stock_monitor.log",
   "state_file": "stock_state.json",
   "notify": {
@@ -14,8 +14,10 @@
     {
       "name": "华为商城 Pura X View 12+256 (四色任一有货即提醒)",
       "type": "vmall",
+      "enabled": true,
       "prd_url": "https://item.vmall.com/product/comdetail/index.html?prdId=10086683896486",
       "open_url": "https://item.vmall.com/product/comdetail/index.html?prdId=10086683896486",
+      "wait_ms": 12000,
       "sku_codes": [
         "2601010634025",
         "2601010634026",
@@ -28,6 +30,7 @@
     {
       "name": "京东自营 Pura X View 12+256 (旧库存接口已下线, 暂无法监控, 请用京东APP到货通知)",
       "type": "jd",
+      "enabled": false,
       "skuId": "10232789210184",
       "area": "1_72_4137_0",
       "open_url": "https://item.jd.com/10232789210184.html"

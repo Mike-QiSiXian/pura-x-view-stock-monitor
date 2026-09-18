@@ -80,7 +80,11 @@ def log(msg, log_file=None):
     print(line, flush=True)
     if log_file:
         try:
-            with open(BASE_DIR / log_file, "a", encoding="utf-8") as f:
+            p = BASE_DIR / log_file
+            # 单文件超过 5MB 时轮转, 避免长时间运行把磁盘写满
+            if p.exists() and p.stat().st_size > 5 * 1024 * 1024:
+                p.replace(p.with_suffix(".old.log"))
+            with open(p, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
         except OSError:
             pass
@@ -149,7 +153,7 @@ def check_vmall(target, session):
         env["NODE_PATH"] = nm if not env.get("NODE_PATH") else env["NODE_PATH"] + sep + nm
     try:
         r = subprocess.run(
-            [node, helper, prd_url, "15000"],
+            [node, helper, prd_url, str(int(target.get("wait_ms", 12000)))],
             capture_output=True, text=True, timeout=120,
             encoding="utf-8", errors="replace", env=env, cwd=str(BASE_DIR),
         )
@@ -295,6 +299,8 @@ def run_once(cfg, state):
     changed = False
     for t in cfg["targets"]:
         name = t.get("name", "未命名目标")
+        if not t.get("enabled", True):
+            continue
         status, detail, open_url = check_target(t, session)
         prev = state.get(name, {}).get("status")
         log(f"{name}: {status} ({detail})")
@@ -323,16 +329,30 @@ def main():
     state = load_state(cfg.get("state_file", "stock_state.json"))
     interval = max(20, int(cfg.get("interval_seconds", 60)))
     jitter = float(cfg.get("jitter_ratio", 0.25))
-    log(f"监控启动: {len(cfg['targets'])} 个目标, 间隔约 {interval} 秒 (Ctrl+C 退出)")
+    active = [t for t in cfg["targets"] if t.get("enabled", True)]
+    log(f"监控启动: {len(active)} 个目标生效(共 {len(cfg['targets'])} 个), "
+        f"间隔约 {interval} 秒 (Ctrl+C 退出)")
     log("提示: 状态从 无货->有货 时才会触发报警, 首次检测即有货也会报警")
+    log(f"日志文件: {BASE_DIR / cfg.get('log_file', 'stock_monitor.log')}")
 
     if args.once:
         run_once(cfg, state)
         return
 
+    # 写 PID 文件, 供 stop_monitor.cmd 精确停止本进程
+    pid_file = BASE_DIR / "monitor.pid"
+    try:
+        pid_file.write_text(str(os.getpid()), encoding="utf-8")
+    except OSError:
+        pass
+
     while True:
         try:
+            t0 = time.time()
             run_once(cfg, state)
+            cost = time.time() - t0
+            log(f"本轮耗时 {cost:.1f} 秒, 下次检查约 {int(interval * (1 - jitter))}-"
+                f"{int(interval * (1 + jitter))} 秒后")
             time.sleep(interval * random.uniform(1 - jitter, 1 + jitter))
         except KeyboardInterrupt:
             log("已手动退出")
@@ -340,6 +360,11 @@ def main():
         except Exception as e:
             log(f"本轮异常(将在下轮重试): {e}")
             time.sleep(interval)
+
+    try:
+        pid_file.unlink()
+    except OSError:
+        pass
 
 
 if __name__ == "__main__":

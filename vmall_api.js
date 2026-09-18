@@ -29,12 +29,15 @@ const CANDIDATE_EDGE = [
   });
 
   const inventory = {};
+  let resolveDone;
+  const done = new Promise((res) => (resolveDone = res));
   page.on("response", async (resp) => {
     try {
       if (!/querySkuInventoryV2/.test(resp.url())) return;
       const d = await resp.json();
       for (const it of d.inventoryReqVOs || [])
         inventory[it.skuCode] = it.inventoryQty;
+      if (Object.keys(inventory).length && resolveDone) resolveDone(true);
     } catch (e) {}
   });
 
@@ -45,7 +48,9 @@ const CANDIDATE_EDGE = [
     await browser.close();
     process.exit(0);
   }
-  await page.waitForTimeout(waitMs);
+  // 抓到库存响应就立刻返回(通常 5-10 秒), 抓不到则等满 waitMs
+  await Promise.race([done, page.waitForTimeout(waitMs)]);
+  await page.waitForTimeout(1000);
   console.log(JSON.stringify({ inventory }));
   await browser.close();
 })();
