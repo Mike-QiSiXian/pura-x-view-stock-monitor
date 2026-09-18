@@ -2,7 +2,10 @@ name: Pura X View 补货检查
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # 每15分钟一次(GitHub 高峰期可能延迟几分钟)
+    # 每30分钟一次。注意两点:
+    # 1. GitHub 对 schedule 有官方节流(高负载时段延迟几十分钟属正常), 实际间隔会大于30分钟;
+    # 2. 私有仓库免费额度2000分钟/月, 配合下方缓存(单次约1分钟)月耗约1500分钟, 额度内。
+    - cron: "*/30 * * * *"
   workflow_dispatch:          # 支持在 Actions 页面手动触发
 
 permissions:
@@ -25,6 +28,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: 缓存依赖(pip / npm / Playwright Chromium, 命中后单次运行约1分钟)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-v1
 
       - name: 安装依赖(playwright-core + Chromium, 用于华为商城库存接口)
         run: |
