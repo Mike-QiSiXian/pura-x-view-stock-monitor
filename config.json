@@ -12,17 +12,14 @@
   },
   "targets": [
     {
-      "name": "华为商城 Pura X View 12+256 (四色任一有货即提醒)",
+      "name": "华为商城 Pura X View 12+256 零度白(白色)",
       "type": "vmall",
       "enabled": true,
       "prd_url": "https://item.vmall.com/product/comdetail/index.html?prdId=10086683896486",
-      "open_url": "https://item.vmall.com/product/comdetail/index.html?prdId=10086683896486",
+      "open_url": "https://item.vmall.com/product/comdetail/index.html?prdId=10086683896486&sbomCode=2601010634026",
       "wait_ms": 12000,
       "sku_codes": [
-        "2601010634025",
-        "2601010634026",
-        "2601010634027",
-        "2601010634028"
+        "2601010634026"
       ],
       "node_path": "C:\\Users\\zhaozhe\\.workbuddy\\binaries\\node\\versions\\22.22.2-3\\node.exe",
       "node_modules_path": "C:\\Users\\zhaozhe\\.workbuddy\\binaries\\node\\workspace\\node_modules"

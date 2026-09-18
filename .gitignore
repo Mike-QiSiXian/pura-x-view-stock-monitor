@@ -1,8 +1,0 @@
-__pycache__/
-*.pyc
-stock_monitor.log
-*.old.log
-monitor.pid
-node_modules/
-package.json
-package-lock.json
