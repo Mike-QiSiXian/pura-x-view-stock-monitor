@@ -2,11 +2,10 @@ name: Pura X View 补货检查
 
 on:
   schedule:
-    # 每30分钟一次。注意两点:
-    # 1. GitHub 对 schedule 有官方节流(高负载时段延迟几十分钟属正常), 实际间隔会大于30分钟;
-    # 2. 私有仓库免费额度2000分钟/月, 配合下方缓存(单次约1分钟)月耗约1500分钟, 额度内。
-    - cron: "*/30 * * * *"
-  workflow_dispatch:          # 支持在 Actions 页面手动触发
+    # 仅作兜底: GitHub 自带 schedule 在私有/低活跃仓库上实测被节流到 2-4 小时一次,
+    # 真正的 10 分钟频率由外部定时器(cron-job.org)调用 workflow_dispatch 接口驱动。
+    - cron: "0 */6 * * *"
+  workflow_dispatch:          # 外部定时器与手动触发都走这里
 
 permissions:
   contents: write             # 允许回写库存状态文件

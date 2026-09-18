@@ -1,0 +1,41 @@
+# ============================================================
+# 外部定时器配置（cron-job.org → GitHub Actions）
+# 一次性配置，之后云端就是每 10 分钟检查一次
+# ============================================================
+
+【1】创建 GitHub 访问令牌（fine-grained PAT）
+  打开: https://github.com/settings/personal-access-tokens/new
+  - Token name: pura-x-view-cron
+  - Expiration: 90 days（到期重建一次）
+  - Repository access: Only select repositories → 选 pura-x-view-stock-monitor
+  - Permissions → Repository permissions → 找到 Actions → 设为 Read and write
+    （其余权限全部保持 No access）
+  - 点 Generate token，复制生成的 github_pat_xxx（只显示一次）
+
+【2】注册 cron-job.org
+  打开: https://cron-job.org/en/signup/  用邮箱注册并登录
+
+【3】创建定时任务（Create cronjob）
+  Title:            Pura X View 补货检查
+  URL:              https://api.github.com/repos/Mike-QiSiXian/pura-x-view-stock-monitor/actions/workflows/stock-check.yml/dispatches
+  Schedule:         Every 10 minutes（执行频率选 10 分钟）
+  Execution:
+      Request method:  POST
+      Request body:    {"ref":"master"}
+      Headers（逐条添加）:
+          Authorization: Bearer 粘贴第1步的 github_pat_xxx
+          Accept: application/vnd.github+json
+          X-GitHub-Api-Version: 2022-11-28
+          Content-Type: application/json
+  保存。
+
+【4】验证
+  - cron-job.org 任务详情里看 History：返回码 204 = 触发成功（204 是 GitHub 的正常返回，不是没内容）
+  - GitHub 仓库 Actions 页面应每 10 分钟出现一次新的 workflow_dispatch 运行
+  - 不依赖 API 的验证方式：看仓库提交历史里 github-actions[bot] 的
+    "chore: update stock state" 提交频率
+
+【注意】
+  - PAT 过期（90 天）后触发会返回 401，需要重建令牌并更新 cron-job.org 的 Header
+  - 每 10 分钟触发 ⇒ 约 4300 次/月，仓库设为 public 后 Actions 分钟数免费无上限
+  - 提醒推送仍走 Server酱（SERVERCHAN_SENDKEY 存在 GitHub Secrets，不在代码里）
