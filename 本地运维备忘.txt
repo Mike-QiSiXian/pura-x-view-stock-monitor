@@ -1,0 +1,53 @@
+# ============================================================
+# 本地运维备忘（WorkBuddy 沙箱环境下的 git 注意事项）
+# 记录时间: 2026-09-18
+# ============================================================
+
+【1】git push 必须用 HTTP/1.1
+  症状: push 反复返回 RC=128 且 stdout/stderr 全空（读操作 ls-remote 正常）。
+  铁证: Windows 事件日志 Application Error（17:12~17:14 连续记录）——
+        git-remote-https.exe 异常代码 0xc0000005（访问冲突），进程反复崩溃。
+  解决: 已在仓库内固化设置——
+        git config http.version HTTP/1.1
+        之后 git push 正常。若换新克隆的仓库，重新执行一次该命令。
+
+【1b】本机监控进程被"无声杀死"
+  症状: pythonw 后台运行一二十后分钟自行消失，日志停在某一轮，事件日志无崩溃记录
+        （TerminateProcess 不产生 APPCRASH）。
+  原因: 由 WorkBuddy 会话内启动的进程会随沙箱会话被回收。
+  解决: 双击 run_monitor_hidden.cmd 自行启动（由 explorer 派生，不受影响），
+        或使用计划任务 PuraXViewMonitor / PuraXViewMonitorGuard（见下）。
+
+【2】不要在本环境执行 git fetch / git pull
+  症状: 执行后项目里的 .git 目录被掏空（只剩 objects/，HEAD 与 config 消失），
+        git 报 "fatal: not a git repository"。这是 WorkBuddy 沙箱的文件拦截所致，
+        与杀毒软件无关（历史记录：D:\AgentHub 项目也踩过同一坑）。
+  安全做法: 用 python 直调单条 git 命令；推送后立刻 git ls-remote 核实远程。
+
+【3】.git 损坏后的恢复步骤
+  1) 把项目目录整体内容保留（本地文件通常不丢）
+  2) 另找一个目录执行: git clone https://github.com/Mike-QiSiXian/pura-x-view-stock-monitor.git <临时目录>
+  3) 把 <临时目录>/.git 移到本项目目录（同盘 move，不要跨盘）
+  4) 在项目内重设身份:
+       git config user.name  Mike-QiSiXian
+       git config user.email Mike-QiSiXian@users.noreply.github.com
+       git config http.version HTTP/1.1
+  5) git status 核对，缺失的历史提交从远程重新拉取
+
+【4】本仓库应有的文件清单（提交前核对，防止误删）
+  .github/workflows/stock-check.yml   云端定时检查工作流
+  .gitignore                          忽略日志/pid/node_modules
+  config.json                         监控配置（当前只监控白色 SKU）
+  monitor.py                          本机监控主程序
+  vmall_api.js                        无头浏览器库存监听助手
+  run_monitor.cmd                     前台运行（看日志）
+  run_monitor_hidden.cmd              后台无窗口运行
+  stop_monitor.cmd                    停止全部监控实例
+  stock_state.json                    库存状态（跨次运行去重，云端会回写）
+  SKU颜色对照表.txt                    颜色/容量与 SKU 编码对照
+  云端定时器配置说明.txt                 cron-job.org 触发配置步骤
+
+【5】教训
+  - 不要在 git 命令里用 --work-tree 指向与本仓库 index 不一致的工作区，
+    会判定所有文件被删除，产生「一次提交删掉整个仓库」的事故。
+  - 危险操作前先 git status 看清单，再提交。
