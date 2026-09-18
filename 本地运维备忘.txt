@@ -16,7 +16,17 @@
         （TerminateProcess 不产生 APPCRASH）。
   原因: 由 WorkBuddy 会话内启动的进程会随沙箱会话被回收。
   解决: 双击 run_monitor_hidden.cmd 自行启动（由 explorer 派生，不受影响），
-        或使用计划任务 PuraXViewMonitor / PuraXViewMonitorGuard（见下）。
+        或使用计划任务 PuraXViewMonitorGuard 托管。
+
+【1c】计划任务托管说明（PuraXViewMonitorGuard）
+  作用: 每 5 分钟触发一次运行 monitor.py；进程还活着时新实例会被单实例保护挡掉，
+        进程挂掉后下一轮（≤5 分钟）自动拉起。
+  自动到期: 结束日期 2026/10/18，到期后不再触发，无需手动清理。
+  查看: schtasks /Query /TN "PuraXViewMonitorGuard" /V /FO LIST
+  临时暂停/恢复: schtasks /Change /TN "PuraXViewMonitorGuard" /DISABLE 或 /ENABLE
+  彻底清除: 双击 取消监控托管.cmd（删任务 + 杀进程 + 清 pid 文件）
+  实测开销: 监控自身 CPU 约 0.01%（20 逻辑核）、常驻内存约 16.5MB；
+            每轮检查会瞬时启动 Edge 无头浏览器，峰值约 0.9GB、持续 7~15 秒后释放。
 
 【2】不要在本环境执行 git fetch / git pull
   症状: 执行后项目里的 .git 目录被掏空（只剩 objects/，HEAD 与 config 消失），
