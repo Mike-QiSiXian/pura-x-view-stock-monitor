@@ -20,8 +20,8 @@
     "time": "2026-09-18T00:55:26"
   },
   "华为商城 Pura X View 12+256 零度白(白色)": {
-    "status": "无货",
-    "detail": "监控 1 个SKU, 有货: 无",
-    "time": "2026-09-24T16:01:21"
+    "status": "错误",
+    "detail": "页面加载失败: NAV:TimeoutError: page.goto: Timeout 45000ms exceeded.\nCall log:\n  - navigating to \"https://item.vmall.com/product/comdetail",
+    "time": "2026-09-24T16:11:36"
   }
 }
