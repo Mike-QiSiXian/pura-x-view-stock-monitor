@@ -40,7 +40,7 @@
 | `stop_monitor.cmd` | 停止全部监控实例 |
 | `取消监控托管.cmd` | **一键清除**：删除计划任务 + 停止监控（不再需要时双击） |
 | `push_to_github.cmd` | 手动推送本地提交到 GitHub（沙箱内 git push 不可用，需在沙箱外执行） |
-| `stock_state.json` | 库存状态，用于跨次运行去重（云端会回写本文件） |
+| `stock_state.json` | 库存状态，用于跨次运行去重（云端经 Actions Cache 读写本文件，不提交仓库） |
 | `SKU颜色对照表.txt` | 颜色/容量 与 SKU 编码的对照（含深链接参数说明） |
 | `云端定时器配置说明.txt` | cron-job.org 触发 GitHub Actions 的完整配置步骤 |
 | `本地运维备忘.txt` | 本机 git / 沙箱环境踩坑记录与恢复步骤 |
@@ -86,7 +86,9 @@ python monitor.py --force        # 忽略单实例保护强制启动
 
 ## 六、云端检查
 
-`monitor.py --once` 由 GitHub Actions 执行，库存状态回写 `stock_state.json`，
+`monitor.py --once` 由 GitHub Actions 执行，库存状态经 **Actions Cache** 保存
+（restore-keys 取最近一次状态，实现跨次运行去重；不再提交到仓库——避免
+github-actions[bot] 每 10 分钟刷一条提交、污染历史并干扰手动推送），
 提醒通过 Server酱推送（SendKey 存在仓库 Secrets：`SERVERCHAN_SENDKEY`，不入库）。
 
 GitHub 对 `schedule` 触发有严重节流（实测被压到约 5 次/天），因此真正的

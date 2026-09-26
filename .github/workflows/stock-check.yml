@@ -8,7 +8,7 @@ on:
   workflow_dispatch:          # 外部定时器与手动触发都走这里
 
 permissions:
-  contents: write             # 允许回写库存状态文件
+  contents: read              # 不再回写仓库, 只读即可(状态走 Actions Cache)
 
 concurrency:
   group: stock-check
@@ -43,15 +43,22 @@ jobs:
           npm install playwright-core
           node node_modules/playwright-core/cli.js install --with-deps chromium
 
+      - name: 恢复库存状态缓存(跨次运行去重; 用 Cache 代替提交, 避免机器人提交刷屏仓库历史)
+        uses: actions/cache/restore@v4
+        with:
+          path: stock_state.json
+          key: stock-state-${{ github.run_id }}
+          restore-keys: |
+            stock-state-
+
       - name: 检查库存(有货时自动推送微信)
         env:
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
         run: python monitor.py --once
 
-      - name: 回写库存状态(实现跨次运行的去重, 避免重复轰炸)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add stock_state.json
-          git diff --cached --quiet || git commit -m "chore: update stock state"
-          git push
+      - name: 保存库存状态缓存(键含 run_id 每次唯一, 旧缓存 7 天未用自动淘汰)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: stock_state.json
+          key: stock-state-${{ github.run_id }}

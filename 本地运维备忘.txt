@@ -53,7 +53,7 @@
   run_monitor.cmd                     前台运行（看日志）
   run_monitor_hidden.cmd              后台无窗口运行
   stop_monitor.cmd                    停止全部监控实例
-  stock_state.json                    库存状态（跨次运行去重，云端会回写）
+  stock_state.json                    库存状态（跨次运行去重；云端经 Actions Cache 读写，不提交仓库）
   SKU颜色对照表.txt                    颜色/容量与 SKU 编码对照
   云端定时器配置说明.txt                 cron-job.org 触发配置步骤
 
